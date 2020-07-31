@@ -39,23 +39,26 @@ def readInReturnDelimitedTextFileToList(directory, filename):
     return listFromFile
 
 def writeOutListToReturnDelimitedTextFile(directory, filename, listToBeWrittenOut):
+    i = "y"
     if os.path.exists(directory + filename):
+        i = "no"
+        i = input(f"Overwrite {filename}?  y/n? ")
+    if i in "yY":
         print(f"Writing out list to {filename}....\n")
         with open(directory + filename, 'w') as filehandle:
             filehandle.writelines("%s\n" % item for item in listToBeWrittenOut)
 
-l = [1,2,3]
-writeOutListToReturnDelimitedTextFile(projectLocation, downloadedFilesFileName, l)
 
-# print('') 
+print('') 
 
-# try:
-#     downloadedFiles = readInReturnDelimitedTextFileToList(projectLocation, downloadedFilesFileName)
-# except:
-#     pass
-#     # downloadedFiles = []
+# Load in downloadedFiles list if it exists
+try:
+    downloadedFiles = readInReturnDelimitedTextFileToList(projectLocation, downloadedFilesFileName)
+except:
+    pass
 
-
+# Write out downloadedFiles list to file
+writeOutListToReturnDelimitedTextFile(projectLocation, downloadedFilesFileName, downloadedFiles)
 
 
 
