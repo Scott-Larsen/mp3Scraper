@@ -10,6 +10,7 @@ import time
 import urllib.request
 import os.path
 # from os import path
+from urllib.parse import urljoin
 
 seedURL = "https://www.classiccat.net/toplist.php"
 saveLocation = "/Users/Scott/Downloads/"
@@ -42,7 +43,7 @@ def readInReturnDelimitedTextFileToDataStructure(directory, filename):
                     # currentLineSplit = currentLine.split()
                     print(f"After split, {currentLine = }")
                     try:
-                        dictionaryFromFile[currentLine[0]] = currentLine[1]
+                        dictionaryFromFile[currentLine[0]] = int(currentLine[1])
                     except:
                         pass
                 else:
@@ -56,11 +57,11 @@ def readInReturnDelimitedTextFileToDataStructure(directory, filename):
     return dataStructureToReturn
 
 def writeOutDataStructureToReturnDelimitedTextFile(directory, filename, dataStructureToBeWrittenOut):
-    i = "y"
+    # i = "y"
     if os.path.exists(directory + filename):
-        i = False
-        i = input(f"Overwrite {filename}?  y/n? ")
-    if i in "yY":
+    #     i = False
+    #     i = input(f"Overwrite {filename}?  y/n? ")
+    # if i in "yY":
         print(f"Writing out list to {filename}....\n")
         with open(directory + filename, 'w') as filehandle:
             if isinstance(dataStructureToBeWrittenOut, list):
@@ -86,6 +87,7 @@ def download(link):
 
 def addLink(link):
     if link not in visitedURLs and link[0] not in "/#":
+        # print(link)
         try:
             URLsToScrape[link] += 1
         except:
@@ -99,7 +101,7 @@ visitedURLs = readInReturnDelimitedTextFileToDataStructure(projectLocation, visi
 downloadedFiles = readInReturnDelimitedTextFileToDataStructure(projectLocation, downloadedFilesFileName)
 URLsToScrape = readInReturnDelimitedTextFileToDataStructure(projectLocation, URLsToScrapeFileName)
 
-if len(URLsToScrape) == 0:
+if len(URLsToScrape) == 0:# and seedURL not in visitedURLs:
     URLsToScrape = collections.defaultdict(int)
     URLsToScrape[seedURL] = 1
 
@@ -109,13 +111,13 @@ if len(URLsToScrape) == 0:
 # # Write out downloadedFiles list to file
 # writeOutDataStructureToReturnDelimitedTextFile(projectLocation, downloadedFilesFileName, downloadedFiles)
 
-proceed = 'y'
+# proceed = 'y'
 
 headers = {"User-Agent": 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:73.0) Gecko/20100101 Firefox/73.0'}
 
-while URLsToScrape and proceed == 'y':
-    URL = (max(URLsToScrape, key=URLsToScrape.get))
-    # URL = URLsToScrape.pop(max(URLsToScrape, key=URLsToScrape.get))
+while URLsToScrape:# and proceed == 'y':
+    # URL = (max(URLsToScrape, key=URLsToScrape.get))
+    URL = URLsToScrape.pop(0)
 
     del URLsToScrape[URL]
 
@@ -129,45 +131,58 @@ while URLsToScrape and proceed == 'y':
 
         soup = BeautifulSoup(page.content, 'html.parser')
 
-        URLSplit = URL.split('/')
-        URLUpOneLevel = '/'.join(URLSplit[:-1])
-        # print(URLUpOneLevel)
-        URLUpTwoLevels = '/'.join(URLSplit[:-2])
-        # print(URLUpTwoLevels)
+
+
+        # URLSplit = URL.split('/')
+        # URLUpOneLevel = '/'.join(URLSplit[:-1])
+        # # print(URLUpOneLevel)
+        # URLUpTwoLevels = '/'.join(URLSplit[:-2])
+        # # print(URLUpTwoLevels)
 
         for a in soup.findAll('a'):
-
+            # print(a)
             link = a.get('href')
+            # print(f"link before join:\n{link}")
+            link = (urljoin(URL, link))
+            # print(f"link after join:\n{link}")
+            # print(link)
+
+            # try:
+            #     print(link[:4])
+            # except:
+            #     pass
+
             if link:
                 if link in visitedURLs:
+                    # print("Link in visitedURLs")
                     pass
 
                 if link[-4:] == ".mp3" and link not in downloadedFiles:
                     # print(f"... downloading {link}")
                     download(link)
                     downloadedFiles.append(link)
-                elif link[:5] in ("index", "javas", "regis", "login") or "blog" in link or "facebook" in link or 'zendesk' in link or "articles" in link or "bbb.org" in link or link[:5] != 'http':
+                elif link[:5] in ("index", "javas", "regis", "login") or "blog" in link or "facebook" in link or 'zendesk' in link or "articles" in link or "bbb.org" in link or "oper" in link or "vocal" in link or "choir" in link or "choe" in link or "chor" in link or "coro" in link or "koor" in link or "kant" in link or "voca" in link or "sing" in link or "song" in link or "teat" in link or "theat" in link:# or link[:4] != 'http':
+                    # print(f"{link} - Link in unique qualifiers")
                     pass
                 else:
-                    if link[:6] == "../../":
-                        # print(f"{URL}")
-                        # URL = URL.split("/")
-                        # # print(f"{URL = }")
-                        # URL = URL[:-1]
-                        # URL = '/'.join(URL)
-                        link = URLUpTwoLevels + link[5:]
-                        # print(link)
-                    
-                    elif link[:3] == "../":
-                        link = URLUpOneLevel + link[2:]
-                    
+                    # print(link)
                     addLink(link)
+
+            # break
 
         # Write out visitedURLs and downloadedFiles lists to files
         writeOutDataStructureToReturnDelimitedTextFile(projectLocation, visitedURLsFileName, visitedURLs)
         writeOutDataStructureToReturnDelimitedTextFile(projectLocation, downloadedFilesFileName, downloadedFiles)
         writeOutDataStructureToReturnDelimitedTextFile(projectLocation, URLsToScrapeFileName, URLsToScrape)
         
+        # for key in URLsToScrape.keys():
+            # print(type(URLsToScrape[key]))
+            # try:
+            #     if URLsToScrape[key].isalpha():
+            #         print(key, URLsToScrape[key])
+            # except:
+            #     pass
+            
         print('')
         tempURLList = sorted(URLsToScrape.keys(), key=lambda key: URLsToScrape[key], reverse = True)[:10]
         for address in tempURLList:
@@ -178,9 +193,11 @@ while URLsToScrape and proceed == 'y':
         #     print(key, URLs[key])
 
         print('')
-        proceed = False
-        proceed = input("Press y to continue...")
+        # proceed = False
+        # proceed = input("Press y to continue...")
         print('')
+
+        time.sleep(1)
 
     except (MissingSchema, InvalidSchema):
         print(f"Failed loading {URL}")
