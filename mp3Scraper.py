@@ -4,13 +4,20 @@ import requests
 from requests.exceptions import MissingSchema, InvalidSchema
 from bs4 import BeautifulSoup
 import collections
+
 # import pprint
 # pp = pprint.PrettyPrinter(width=41, compact=True)
 import time
 import urllib.request
 import os.path
+
 # from os import path
-from urllib.parse import urljoin
+from urllib import parse
+from urllib.parse import quote, unquote, urljoin
+
+# from urllib3.exceptions import HTTPError
+from urllib.error import HTTPError, URLError
+import random
 
 seedURL = "https://www.classiccat.net/toplist.php"
 saveLocation = "/Users/Scott/Downloads/"
@@ -20,58 +27,60 @@ downloadedFilesFileName = "downloadedFiles.txt"
 URLsToScrapeFileName = "URLsToScrape.txt"
 
 
-URLsToScrape = collections.defaultdict(int)
+# URLsToScrape = collections.defaultdict(int)
+
 
 def readInReturnDelimitedTextFileToDataStructure(directory, filename):
     listFromFile = []
     dictionaryFromFile = {}
-        
+
     if os.path.exists(directory + filename):
         print(f"Opening {filename} and writing it into a data structure....\n")
 
         # open file and read the content in a list
-        with open(directory + filename, 'r') as filehandle:
-            # print("hola")
-            # print(f"hello {filehandle[0]}")
+        with open(directory + filename, "r") as filehandle:
             for line in filehandle:
-                # print(line)
-                # remove linebreak which is the last character of the string
                 currentLine = line[:-1]
                 if " " in currentLine:
-                    print(f"Before split, {currentLine = }")
                     currentLine = currentLine.split()
-                    # currentLineSplit = currentLine.split()
-                    print(f"After split, {currentLine = }")
                     try:
                         dictionaryFromFile[currentLine[0]] = int(currentLine[1])
                     except:
                         pass
                 else:
-                    # add item to the list
                     listFromFile.append(currentLine)
     if len(listFromFile) >= len(dictionaryFromFile):
         dataStructureToReturn = listFromFile
     else:
         dataStructureToReturn = dictionaryFromFile
-    print(f"Loaded in the following from file....\n{dataStructureToReturn}\n")
+    print(f"Loaded in {filename}.\n")
     return dataStructureToReturn
 
-def writeOutDataStructureToReturnDelimitedTextFile(directory, filename, dataStructureToBeWrittenOut):
-    # i = "y"
+
+def writeOutDataStructureToReturnDelimitedTextFile(
+    directory, filename, dataStructureToBeWrittenOut
+):
     if os.path.exists(directory + filename):
-    #     i = False
-    #     i = input(f"Overwrite {filename}?  y/n? ")
-    # if i in "yY":
         print(f"Writing out list to {filename}....\n")
-        with open(directory + filename, 'w') as filehandle:
+        with open(directory + filename, "w") as filehandle:
             if isinstance(dataStructureToBeWrittenOut, list):
-                filehandle.writelines(f"{item}\n" for item in dataStructureToBeWrittenOut)
+                filehandle.writelines(
+                    f"{item}\n" for item in dataStructureToBeWrittenOut
+                )
             elif isinstance(dataStructureToBeWrittenOut, dict):
-                filehandle.writelines(f"{key} {dataStructureToBeWrittenOut[key]}\n" for key in dataStructureToBeWrittenOut.keys())
+                filehandle.writelines(
+                    f"{key} {dataStructureToBeWrittenOut[key]}\n"
+                    for key in dataStructureToBeWrittenOut.keys()
+                )
+
 
 def download(link):
-    fileName = link.split('/')[-1]
+    fileName = link.split("/")[-1]
+    # print(f"{fileName = }")
+    fileName = unquote(fileName)
+    # print(f"Filename after unquoting - {fileName}")
 
+    # print(f"\nFilename = {fileName}\n")
     if os.path.exists(saveLocation + fileName):
         print(f"{fileName} is already downloaded.")
         time.sleep(1)
@@ -79,125 +88,127 @@ def download(link):
         try:
             urllib.request.urlretrieve(link, saveLocation + fileName)
             print(f"{fileName} downloaded.")
-        except HTTPError:
+        except (urllib.error.HTTPError, urllib.error.URLError) as err:
+            try:
+                print(f"{err.code} Error downloading {link}")
+            except:
+                pass
             pass
-        time.sleep(60)
+            # try:
+            #     print(f"Link before unquoting {link}")
+            #     unquote(link)
+            #     print(f"Link after unquoting {link}")
+            #     urllib.request.urlretrieve(link, saveLocation + fileName)
+            #     print(f"{fileName} downloaded.")
+            # except urllib.error.HTTPError as err:
+            #     print(f"{err.code} Error downloading {link}")
+            #     pass
+        time.sleep(random.randint(10, 60))
+
+    #     except urllib.error.HTTPError as err:
+    # print(err.code)
+
 
 # download("http://d19bhbirxx14bg.cloudfront.net/bach-bwv938-breemer.mp3")
 
+
 def addLink(link):
-    if link not in visitedURLs and link[0] not in "/#":
+    if link not in visitedURLs and link not in URLsToScrape and link[0] not in "/#":
+        URLsToScrape.append(link)
         # print(link)
-        try:
-            URLsToScrape[link] += 1
-        except:
-            URLsToScrape[link] = 1
+        # try:
+        #     URLsToScrape[link] += 1
+        # except:
+        #     URLsToScrape[link] = 1
 
 
-print('') 
+print("")
 
 # Read in downloadedFiles list if it exists
-visitedURLs = readInReturnDelimitedTextFileToDataStructure(projectLocation, visitedURLsFileName)
-downloadedFiles = readInReturnDelimitedTextFileToDataStructure(projectLocation, downloadedFilesFileName)
-URLsToScrape = readInReturnDelimitedTextFileToDataStructure(projectLocation, URLsToScrapeFileName)
+visitedURLs = readInReturnDelimitedTextFileToDataStructure(
+    projectLocation, visitedURLsFileName
+)
+downloadedFiles = readInReturnDelimitedTextFileToDataStructure(
+    projectLocation, downloadedFilesFileName
+)
+URLsToScrape = readInReturnDelimitedTextFileToDataStructure(
+    projectLocation, URLsToScrapeFileName
+)
 
-if len(URLsToScrape) == 0:# and seedURL not in visitedURLs:
-    URLsToScrape = collections.defaultdict(int)
-    URLsToScrape[seedURL] = 1
+if len(URLsToScrape) == 0:  # and seedURL not in visitedURLs:
+    URLsToScrape = [seedURL]
 
-# downloadedFiles = [6,7,8]
-# downloadedFiles = {"a": 1, "b": 2}
+headers = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:73.0) Gecko/20100101 Firefox/73.0"
+}
 
-# # Write out downloadedFiles list to file
-# writeOutDataStructureToReturnDelimitedTextFile(projectLocation, downloadedFilesFileName, downloadedFiles)
-
-# proceed = 'y'
-
-headers = {"User-Agent": 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:73.0) Gecko/20100101 Firefox/73.0'}
-
-while URLsToScrape:# and proceed == 'y':
-    # URL = (max(URLsToScrape, key=URLsToScrape.get))
+while URLsToScrape:
     URL = URLsToScrape.pop(0)
-
-    del URLsToScrape[URL]
 
     visitedURLs.append(URL)
 
-    print(f"Scanning {URL}")
+    print(f"\nScanning {URL}\n")
     try:
         page = requests.get(URL, headers=headers)
 
-        # print(page)
+        soup = BeautifulSoup(page.content, "html.parser")
 
-        soup = BeautifulSoup(page.content, 'html.parser')
+        for a in soup.findAll("a"):
+            link = a.get("href")
+            link = urljoin(URL, link)
 
-
-
-        # URLSplit = URL.split('/')
-        # URLUpOneLevel = '/'.join(URLSplit[:-1])
-        # # print(URLUpOneLevel)
-        # URLUpTwoLevels = '/'.join(URLSplit[:-2])
-        # # print(URLUpTwoLevels)
-
-        for a in soup.findAll('a'):
-            # print(a)
-            link = a.get('href')
-            # print(f"link before join:\n{link}")
-            link = (urljoin(URL, link))
-            # print(f"link after join:\n{link}")
-            # print(link)
-
-            # try:
-            #     print(link[:4])
-            # except:
-            #     pass
+            scheme, netloc, path, query, fragment = parse.urlsplit(link)
+            path = unquote(path)
+            path = quote(path)
+            link = parse.urlunsplit((scheme, netloc, path, query, fragment))
 
             if link:
                 if link in visitedURLs:
-                    # print("Link in visitedURLs")
                     pass
 
                 if link[-4:] == ".mp3" and link not in downloadedFiles:
-                    # print(f"... downloading {link}")
-                    download(link)
+                    try:
+                        download(link)
+                    except:
+                        pass
                     downloadedFiles.append(link)
-                elif link[:5] in ("index", "javas", "regis", "login") or "blog" in link or "facebook" in link or 'zendesk' in link or "articles" in link or "bbb.org" in link or "oper" in link or "vocal" in link or "choir" in link or "choe" in link or "chor" in link or "coro" in link or "koor" in link or "kant" in link or "voca" in link or "sing" in link or "song" in link or "teat" in link or "theat" in link:# or link[:4] != 'http':
-                    # print(f"{link} - Link in unique qualifiers")
+                elif (
+                    link[:5] in ("index", "javas", "regis", "login")
+                    or "blog" in link
+                    or "facebook" in link
+                    or "zendesk" in link
+                    or "articles" in link
+                    or "bbb.org" in link
+                    or "oper" in link
+                    or "vocal" in link
+                    or "choir" in link
+                    or "choe" in link
+                    or "chor" in link
+                    or "coro" in link
+                    or "coral" in link
+                    or "koor" in link
+                    or "kant" in link
+                    or "voca" in link
+                    or "sing" in link
+                    or "song" in link
+                    or "teat" in link
+                    or "theat" in link
+                ):
                     pass
                 else:
-                    # print(link)
                     addLink(link)
 
-            # break
+        writeOutDataStructureToReturnDelimitedTextFile(
+            projectLocation, visitedURLsFileName, visitedURLs
+        )
+        writeOutDataStructureToReturnDelimitedTextFile(
+            projectLocation, downloadedFilesFileName, downloadedFiles
+        )
+        writeOutDataStructureToReturnDelimitedTextFile(
+            projectLocation, URLsToScrapeFileName, URLsToScrape
+        )
 
-        # Write out visitedURLs and downloadedFiles lists to files
-        writeOutDataStructureToReturnDelimitedTextFile(projectLocation, visitedURLsFileName, visitedURLs)
-        writeOutDataStructureToReturnDelimitedTextFile(projectLocation, downloadedFilesFileName, downloadedFiles)
-        writeOutDataStructureToReturnDelimitedTextFile(projectLocation, URLsToScrapeFileName, URLsToScrape)
-        
-        # for key in URLsToScrape.keys():
-            # print(type(URLsToScrape[key]))
-            # try:
-            #     if URLsToScrape[key].isalpha():
-            #         print(key, URLsToScrape[key])
-            # except:
-            #     pass
-            
-        print('')
-        tempURLList = sorted(URLsToScrape.keys(), key=lambda key: URLsToScrape[key], reverse = True)[:10]
-        for address in tempURLList:
-            print(URLsToScrape[address], address)
-        print('')
-        # print(tempURLs[:5])
-        # for key in URLs.keys():
-        #     print(key, URLs[key])
-
-        print('')
-        # proceed = False
-        # proceed = input("Press y to continue...")
-        print('')
-
-        time.sleep(1)
+        time.sleep(random.randint(1, 5))
 
     except (MissingSchema, InvalidSchema):
         print(f"Failed loading {URL}")
