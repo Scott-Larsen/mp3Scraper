@@ -3,7 +3,6 @@
 import requests
 from requests.exceptions import MissingSchema, InvalidSchema
 from bs4 import BeautifulSoup
-import collections
 import time
 import urllib.request
 import os.path
