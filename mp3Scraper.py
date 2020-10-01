@@ -4,18 +4,11 @@ import requests
 from requests.exceptions import MissingSchema, InvalidSchema
 from bs4 import BeautifulSoup
 import collections
-
-# import pprint
-# pp = pprint.PrettyPrinter(width=41, compact=True)
 import time
 import urllib.request
 import os.path
-
-# from os import path
 from urllib import parse
 from urllib.parse import quote, unquote, urljoin
-
-# from urllib3.exceptions import HTTPError
 from urllib.error import HTTPError, URLError
 import random
 
@@ -27,9 +20,6 @@ downloadedFilesFileName = "downloadedFiles.txt"
 URLsToScrapeFileName = "URLsToScrape.txt"
 
 
-# URLsToScrape = collections.defaultdict(int)
-
-
 def readInReturnDelimitedTextFileToDataStructure(directory, filename):
     listFromFile = []
     dictionaryFromFile = {}
@@ -37,7 +27,6 @@ def readInReturnDelimitedTextFileToDataStructure(directory, filename):
     if os.path.exists(directory + filename):
         print(f"Opening {filename} and writing it into a data structure....\n")
 
-        # open file and read the content in a list
         with open(directory + filename, "r") as filehandle:
             for line in filehandle:
                 currentLine = line[:-1]
@@ -76,11 +65,8 @@ def writeOutDataStructureToReturnDelimitedTextFile(
 
 def download(link):
     fileName = link.split("/")[-1]
-    # print(f"{fileName = }")
     fileName = unquote(fileName)
-    # print(f"Filename after unquoting - {fileName}")
 
-    # print(f"\nFilename = {fileName}\n")
     if os.path.exists(saveLocation + fileName):
         print(f"{fileName} is already downloaded.")
         time.sleep(1)
@@ -94,37 +80,16 @@ def download(link):
             except:
                 pass
             pass
-            # try:
-            #     print(f"Link before unquoting {link}")
-            #     unquote(link)
-            #     print(f"Link after unquoting {link}")
-            #     urllib.request.urlretrieve(link, saveLocation + fileName)
-            #     print(f"{fileName} downloaded.")
-            # except urllib.error.HTTPError as err:
-            #     print(f"{err.code} Error downloading {link}")
-            #     pass
         time.sleep(random.randint(10, 60))
-
-    #     except urllib.error.HTTPError as err:
-    # print(err.code)
-
-
-# download("http://d19bhbirxx14bg.cloudfront.net/bach-bwv938-breemer.mp3")
 
 
 def addLink(link):
     if link not in visitedURLs and link not in URLsToScrape and link[0] not in "/#":
         URLsToScrape.append(link)
-        # print(link)
-        # try:
-        #     URLsToScrape[link] += 1
-        # except:
-        #     URLsToScrape[link] = 1
 
 
 print("")
 
-# Read in downloadedFiles list if it exists
 visitedURLs = readInReturnDelimitedTextFileToDataStructure(
     projectLocation, visitedURLsFileName
 )
@@ -135,7 +100,7 @@ URLsToScrape = readInReturnDelimitedTextFileToDataStructure(
     projectLocation, URLsToScrapeFileName
 )
 
-if len(URLsToScrape) == 0:  # and seedURL not in visitedURLs:
+if len(URLsToScrape) == 0:
     URLsToScrape = [seedURL]
 
 headers = {
